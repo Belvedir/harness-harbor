@@ -1,0 +1,4 @@
+# Harbor with its cloud sandbox backends (the Belvedir sandbox has no Docker
+# daemon, so suites run on Harbor's Modal backend). Pin the minor: the task
+# schema and CLI flags this driver relies on are Harbor 0.22's.
+harbor[modal]>=0.22,<0.23
