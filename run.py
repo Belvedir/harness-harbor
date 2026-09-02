@@ -371,7 +371,11 @@ def main() -> None:
         f"dataset {dataset} · agent {cfg['agent']} · model {model_id} · env {harbor_env} · "
         f"{scope} · {cfg['attempts']} attempt(s)"
     )
+    # The vendored belvedir_harbor package (this repo's dir) must be importable
+    # by Harbor's interpreter for `-a belvedir_harbor.agent:BelvedirAgent`.
+    here = str(Path(__file__).resolve().parent)
     run_env = {**os.environ, **model_env}
+    run_env["PYTHONPATH"] = here + (os.pathsep + run_env["PYTHONPATH"] if run_env.get("PYTHONPATH") else "")
     started = time.time()
     proc = subprocess.run(cmd, env=run_env)
     elapsed = time.time() - started

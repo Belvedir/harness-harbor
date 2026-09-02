@@ -47,4 +47,7 @@ export HARBOR_DATASET=harbor/hello-world HARBOR_ENV=docker HARBOR_AGENT=oracle M
 python run.py && cat results.json
 ```
 
+`belvedir_harbor/` is a vendored mirror of the platform repo's `harbor/belvedir_harbor`
+(synced there by `scripts/sync-harness-harbor.sh`); edit it upstream, not here.
+
 Tests: `python3 test/run-tests.py`.
