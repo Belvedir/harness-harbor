@@ -201,9 +201,28 @@ def aggregate(job_dir: Path) -> dict:
 # --- main ----------------------------------------------------------------------
 
 
+def harbor_bin() -> str | None:
+    """The harbor CLI: on PATH, or next to this interpreter (a venv or a
+    --user/--break-system-packages install whose bin dir isn't on PATH)."""
+    found = shutil.which("harbor")
+    if found:
+        return found
+    for candidate in (
+        Path(sys.executable).parent / "harbor",
+        Path.home() / ".local" / "bin" / "harbor",
+    ):
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return None
+
+
 def main() -> None:
-    if shutil.which("harbor") is None:
-        fail("harbor is not installed (the install step should `pip install -r requirements.txt`)")
+    harbor = harbor_bin()
+    if harbor is None:
+        fail(
+            "harbor is not installed (the install step should `pip install --break-system-packages -r requirements.txt`, "
+            "or `python -m pip install -r requirements.txt` inside a venv)"
+        )
     dataset = env("HARBOR_DATASET")
     if not dataset:
         fail("HARBOR_DATASET is not set — this driver runs a Harbor hub dataset (org/name[@version])")
@@ -241,6 +260,7 @@ def main() -> None:
         "jobs_dir": JOBS_DIR,
     }
     cmd = build_command(cfg)
+    cmd[0] = harbor
     scope = "all tasks" if not cfg["n_tasks"] else f"up to {cfg['n_tasks']} tasks"
     log(
         f"dataset {dataset} · agent {cfg['agent']} · model {model_id} · env {harbor_env} · "
@@ -287,7 +307,7 @@ def main() -> None:
 
 def harbor_version() -> str | None:
     try:
-        return subprocess.run(["harbor", "--version"], capture_output=True, text=True, timeout=30).stdout.strip() or None
+        return subprocess.run([harbor_bin() or "harbor", "--version"], capture_output=True, text=True, timeout=30).stdout.strip() or None
     except (OSError, subprocess.SubprocessError):
         return None
 

@@ -41,7 +41,7 @@ including a Belvedir router key); no base infers the vendor from the id.
 ## Local run
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt            # in the Belvedir sandbox: pip install --break-system-packages -r requirements.txt (Debian, PEP 668)
 export HARBOR_DATASET=harbor/hello-world HARBOR_ENV=docker HARBOR_AGENT=oracle MODEL=openai/gpt-4.1-mini MODEL_API_KEY=$OPENROUTER_API_KEY
 python run.py && cat results.json
 ```
