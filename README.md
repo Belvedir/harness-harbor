@@ -14,8 +14,8 @@ Benchmarks page. It also runs anywhere with Docker (`HARBOR_ENV=docker`).
 | Env | Meaning |
 |---|---|
 | `MODEL`, `MODEL_API_BASE`, `MODEL_API_KEY` | the model under test (Belvedir's standard harness contract; OpenRouter base by default) |
-| `HARBOR_DATASET` | hub dataset `org/name[@version]` — the catalog preset fills it |
-| `HARBOR_AGENT` | Harbor agent scaffold, default `terminus-2` (`claude-code`, `codex`, `openhands`, … also work) |
+| `HARBOR_DATASET` | hub dataset `org/name[@version]` — the catalog preset fills it. Alternatively the platform sets `BELVEDIR_HARBOR_BUNDLE_URL`, an exported Belvedir environment the driver materializes and runs with `harbor run -p` |
+| `HARBOR_AGENT` | Harbor agent scaffold, default `terminus-2` (`claude-code`, `codex`, `openhands`, … also work); `belvedir` = the Belvedir external agent (one model call per task via the `MODEL_*` contract, traced into the project) |
 | `HARBOR_ENV` | Harbor backend, default `modal`; `docker` for local runs |
 | `HARBOR_N_TASKS` | task cap, default 10 (blank/0 = whole suite; the Belvedir sandbox caps a run at 1h) |
 | `HARBOR_TASK_NAMES` | comma-separated task names or globs to include |
@@ -25,8 +25,9 @@ Benchmarks page. It also runs anywhere with Docker (`HARBOR_ENV=docker`).
 | `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | with `HARBOR_ENV=modal`: the Modal account hosting the per-task containers. Bring your own — Belvedir never puts platform credentials in a sandbox |
 
 Output: `results.json` with `score` (mean reward over trials, errored trials
-count as 0), `total`, `passed`, `errored`, per-task rewards and errors, the
-dataset/agent/model, and Harbor's version. When more than 30% of trials error
+count as 0), `total`, `passed`, `errored`, `container_sec` (summed per-task
+container wall time — what the platform meters for managed Modal), per-task
+rewards and errors, the dataset/agent/model, and Harbor's version. When more than 30% of trials error
 the driver exits scoreless rather than report a number that measures the
 infrastructure.
 

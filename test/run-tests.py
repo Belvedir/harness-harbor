@@ -1,6 +1,7 @@
 """Pure-function tests for the driver. Run: python3 test/run-tests.py"""
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -69,6 +70,25 @@ with tempfile.TemporaryDirectory() as d:
     check("error recorded", agg["tasks"][3]["error"] == "RuntimeError: boom")
     check("multi-metric mean", agg["tasks"][4]["score"] == 0.5)
     check("error rate", abs(agg["error_rate"] - 0.2) < 1e-9)
+
+# bundle materialization + agent mapping
+check("belvedir agent maps to import path", run.agent_arg("belvedir") == run.BELVEDIR_AGENT_IMPORT and run.agent_arg("terminus-2") == "terminus-2")
+cmd = run.build_command({"dataset": "belvedir:x", "dataset_path": Path("dataset"), "env": "modal", "agent": "belvedir", "model": "openai/gpt-4.1-mini", "concurrency": 2, "jobs_dir": Path("jobs"), "n_tasks": None, "task_names": [], "attempts": 1})
+check("bundle run uses -p and the agent import path", cmd[2:4] == ["-p", "dataset"] and "-d" not in cmd and run.BELVEDIR_AGENT_IMPORT in cmd, str(cmd))
+with tempfile.TemporaryDirectory() as d:
+    out = Path(d) / "ds"
+    n = run.materialize_bundle({"files": {"README.md": "r", "task-001/task.toml": "t", "task-001/solution/solve.sh": "#!/bin/bash\n"},
+                                "shared": {"tests/test.sh": "#!/bin/bash\n", "tests/verify.py": "print(1)\n"},
+                                "taskDirs": ["task-001"], "executable": ["tests/test.sh", "solution/solve.sh"]}, out)
+    check("bundle file count", n == 5, str(n))
+    check("shared files land in the task dir", (out / "task-001/tests/verify.py").read_text() == "print(1)\n")
+    check("scripts executable", os.access(out / "task-001/tests/test.sh", os.X_OK) and os.access(out / "task-001/solution/solve.sh", os.X_OK) and not os.access(out / "task-001/task.toml", os.X_OK))
+    try:
+        run.materialize_bundle({"files": {"../escape": "x"}}, out)
+        check("path escape refused", False)
+    except RuntimeError:
+        check("path escape refused", True)
+check("elapsed parsing", run._elapsed_sec("2026-09-02T20:05:58.100000+00:00", "2026-09-02T20:07:03.600000+00:00") == 65.5 and run._elapsed_sec(None, "x") is None)
 
 if failures:
     sys.exit(f"{failures} failing")

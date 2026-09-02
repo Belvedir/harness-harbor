@@ -2,3 +2,7 @@
 # daemon, so suites run on Harbor's Modal backend). Pin the minor: the task
 # schema and CLI flags this driver relies on are Harbor 0.22's.
 harbor[modal]>=0.22,<0.23
+# The Belvedir external agent (HARBOR_AGENT=belvedir — the Harbor runner) and
+# its tracing SDK. Installed from the platform repo until belvedir-harbor is on PyPI.
+belvedir-harbor @ git+https://github.com/Belvedir/belvedir-platform.git@main#subdirectory=harbor
+belvedir>=0.6

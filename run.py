@@ -12,8 +12,16 @@ Platform contract (Belvedir benchmarks docs):
        MODEL_API_BASE        OpenAI-compatible base URL; OpenRouter by default
        MODEL_API_KEY         key for that endpoint
        HARBOR_DATASET        hub dataset, `org/name` or `org/name@version`
-                             (required; the catalog preset fills it)
-       HARBOR_AGENT          Harbor agent scaffold (default terminus-2)
+                             (the catalog preset fills it) — OR
+       BELVEDIR_HARBOR_BUNDLE_URL  (set by the platform for the Harbor
+                             runner) a signed URL to an exported Belvedir
+                             environment (lib/harbor/export.ts manifest:
+                             files/shared/taskDirs/executable), materialized
+                             to ./dataset and run with `harbor run -p`
+       HARBOR_AGENT          Harbor agent scaffold (default terminus-2);
+                             `belvedir` = the Belvedir external agent
+                             (belvedir_harbor.agent:BelvedirAgent — one model
+                             call per task, MODEL_* contract, traced)
        HARBOR_ENV            Harbor environment backend (default modal — the
                              Belvedir sandbox has no Docker daemon; `docker`
                              for local runs)
@@ -44,12 +52,16 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 DEFAULT_AGENT = "terminus-2"
+BELVEDIR_AGENT_IMPORT = "belvedir_harbor.agent:BelvedirAgent"
+DATASET_DIR = Path("dataset")
 DEFAULT_ENV = "modal"
 DEFAULT_N_TASKS = 10
 DEFAULT_CONCURRENCY = 4
@@ -129,12 +141,20 @@ def model_args(model: str, base: str, key: str, raw_override: str = "") -> tuple
 # --- command (pure) ------------------------------------------------------------
 
 
+def agent_arg(agent: str) -> str:
+    """`belvedir` (and the import path itself) → the Belvedir external agent;
+    anything else is one of Harbor's built-in agent names."""
+    if agent in ("belvedir", "belvedir-agent", BELVEDIR_AGENT_IMPORT):
+        return BELVEDIR_AGENT_IMPORT
+    return agent
+
+
 def build_command(cfg: dict) -> list[str]:
     cmd = [
         "harbor", "run",
-        "-d", cfg["dataset"],
+        *(["-p", str(cfg["dataset_path"])] if cfg.get("dataset_path") else ["-d", cfg["dataset"]]),
         "-e", cfg["env"],
-        "-a", cfg["agent"],
+        "-a", agent_arg(cfg["agent"]),
         "-m", cfg["model"],
         "-n", str(cfg["concurrency"]),
         "-o", str(cfg["jobs_dir"]),
@@ -147,6 +167,52 @@ def build_command(cfg: dict) -> list[str]:
     if cfg.get("attempts", 1) > 1:
         cmd += ["-k", str(cfg["attempts"])]
     return cmd
+
+
+# --- exported Belvedir environment (bundle) -------------------------------------
+
+
+def materialize_bundle(manifest: dict, out: Path) -> int:
+    """Write an exported dataset (the platform's HarborExport JSON: per-task
+    `files`, once-only `shared` files written into every `taskDirs` entry,
+    `executable` suffixes) into `out`. Returns the file count. Paths are
+    confined to `out`."""
+    out = out.resolve()
+    execs = manifest.get("executable") or []
+
+    def is_exec(rel: str) -> bool:
+        return any(rel == e or rel.endswith("/" + e) for e in execs)
+
+    def write(rel: str, content: str) -> None:
+        target = (out / rel).resolve()
+        if out not in target.parents:
+            raise RuntimeError(f"bundle path escapes the dataset dir: {rel}")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        if is_exec(rel):
+            target.chmod(target.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+    count = 0
+    for rel, content in (manifest.get("files") or {}).items():
+        write(rel, content)
+        count += 1
+    for task_dir in manifest.get("taskDirs") or []:
+        for rel, content in (manifest.get("shared") or {}).items():
+            write(f"{task_dir}/{rel}", content)
+            count += 1
+    return count
+
+
+def fetch_bundle(url: str) -> dict:
+    last: Exception | None = None
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(url, timeout=120) as res:
+                return json.loads(res.read().decode())
+        except Exception as e:  # noqa: BLE001 - retried, then surfaced
+            last = e
+            time.sleep(2 * (attempt + 1))
+    raise RuntimeError(f"bundle download failed: {last}")
 
 
 # --- results (pure over the jobs dir) ------------------------------------------
@@ -169,9 +235,11 @@ def aggregate(job_dir: Path) -> dict:
             # Multi-metric verifiers: take the mean of numeric metrics.
             nums = [v for v in rewards.values() if isinstance(v, (int, float))]
             reward = sum(nums) / len(nums) if nums else None
+        elapsed = _elapsed_sec(r.get("started_at"), r.get("finished_at"))
         trials.append(
             {
                 "task": r.get("task_name") or trial_result.parent.name,
+                "elapsed_sec": elapsed,
                 "trial": r.get("trial_name") or trial_result.parent.name,
                 "score": float(reward) if reward is not None and not exc else 0.0,
                 "pass": bool(reward is not None and not exc and reward >= 0.5),
@@ -194,8 +262,25 @@ def aggregate(job_dir: Path) -> dict:
         "passed": sum(1 for t in trials if t["pass"]),
         "errored": errored,
         "error_rate": (errored / total) if total else 0.0,
+        # Summed per-task container wall time — what the platform meters
+        # when the containers ran on its managed Modal workspace.
+        "container_sec": round(sum(t["elapsed_sec"] or 0.0 for t in trials), 1),
         "tasks": trials,
     }
+
+
+def _elapsed_sec(started, finished):
+    """Seconds between two ISO-8601 stamps (Harbor writes them with a UTC
+    offset); None when either is missing or unparseable."""
+    from datetime import datetime
+
+    try:
+        a = datetime.fromisoformat(str(started).replace("Z", "+00:00"))
+        b = datetime.fromisoformat(str(finished).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+    sec = (b - a).total_seconds()
+    return round(sec, 1) if sec >= 0 else None
 
 
 # --- main ----------------------------------------------------------------------
@@ -224,9 +309,21 @@ def main() -> None:
             "or `python -m pip install -r requirements.txt` inside a venv)"
         )
     dataset = env("HARBOR_DATASET")
-    if not dataset:
-        fail("HARBOR_DATASET is not set — this driver runs a Harbor hub dataset (org/name[@version])")
-    if env("BELVEDIR_TASKS_FILE") or env("FRACTAL_TASKS_FILE"):
+    bundle_url = env("BELVEDIR_HARBOR_BUNDLE_URL")
+    dataset_path = None
+    if bundle_url:
+        # The Harbor runner: the platform exported the environment's task set
+        # as a Harbor dataset; run that instead of a hub dataset.
+        manifest = fetch_bundle(bundle_url)
+        if DATASET_DIR.exists():
+            shutil.rmtree(DATASET_DIR)
+        n = materialize_bundle(manifest, DATASET_DIR)
+        dataset = f"belvedir:{manifest.get('slug') or 'environment'}"
+        dataset_path = DATASET_DIR
+        log(f"materialized exported environment {dataset} ({n} files, {len(manifest.get('taskDirs') or [])} tasks)")
+    elif not dataset:
+        fail("HARBOR_DATASET is not set — this driver runs a Harbor hub dataset (org/name[@version]) or an exported Belvedir environment")
+    elif env("BELVEDIR_TASKS_FILE") or env("FRACTAL_TASKS_FILE"):
         log(
             "note: a task file was provided but this driver runs a complete Harbor suite; "
             "export the environment with `belvedir environments export` and run it with `harbor run` instead"
@@ -237,12 +334,19 @@ def main() -> None:
             "HARBOR_ENV=modal needs MODAL_TOKEN_ID and MODAL_TOKEN_SECRET (the Modal account that "
             "hosts the per-task containers); set them on the harness, or HARBOR_ENV=docker for a local run"
         )
-    try:
-        model_id, model_env = model_args(
-            env("MODEL"), env("MODEL_API_BASE"), env("MODEL_API_KEY"), env("HARBOR_MODEL")
-        )
-    except ValueError as e:
-        fail(str(e))
+    agent = env("HARBOR_AGENT", DEFAULT_AGENT)
+    if agent_arg(agent) == BELVEDIR_AGENT_IMPORT:
+        # The Belvedir agent reads MODEL/MODEL_API_BASE/MODEL_API_KEY itself.
+        model_id, model_env = env("MODEL") or env("HARBOR_MODEL"), {}
+        if not model_id:
+            fail("MODEL is not set")
+    else:
+        try:
+            model_id, model_env = model_args(
+                env("MODEL"), env("MODEL_API_BASE"), env("MODEL_API_KEY"), env("HARBOR_MODEL")
+            )
+        except ValueError as e:
+            fail(str(e))
     n_tasks_raw = env("HARBOR_N_TASKS", str(DEFAULT_N_TASKS))
     try:
         n_tasks = int(n_tasks_raw) if n_tasks_raw else 0
@@ -250,8 +354,9 @@ def main() -> None:
         fail(f"HARBOR_N_TASKS must be an integer, got {n_tasks_raw!r}")
     cfg = {
         "dataset": dataset,
+        "dataset_path": dataset_path,
         "env": harbor_env,
-        "agent": env("HARBOR_AGENT", DEFAULT_AGENT),
+        "agent": agent,
         "model": model_id,
         "concurrency": int(env("HARBOR_CONCURRENCY", str(DEFAULT_CONCURRENCY)) or DEFAULT_CONCURRENCY),
         "n_tasks": n_tasks if n_tasks > 0 else None,
