@@ -1,0 +1,144 @@
+Skipping image OS validation for hb__7140400b79079e5552d1ff0c04b84dfe: docker inspect returned 1
+Running command: apt-get update && apt-get install -y curl ca-certificates
+Command outputs captured
+Running command: set -o pipefail; retry_all=$(curl --help all 2>/dev/null | grep -q -- '--retry-all-errors' && echo '--retry-all-errors'); curl -fsSL --retry 5 --retry-delay 2 $retry_all https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
+Command outputs captured
+Running command: export NVM_DIR="${NVM_DIR:-$HOME/.nvm}" && . "$NVM_DIR/nvm.sh" && nvm install 22
+Command outputs captured
+Running command: . ~/.nvm/nvm.sh && nvm use 22 && node -v && npm -v
+Command outputs captured
+Running command: . ~/.nvm/nvm.sh && nvm use 22 && npm install -g openclaw@latest --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
+Command outputs captured
+Running command: . ~/.nvm/nvm.sh && nvm use 22 && openclaw --version
+Command outputs captured
+OpenClaw forwarding env vars for provider 'openai': ['OPENAI_API_KEY', 'OPENAI_BASE_URL']
+Running command: . ~/.nvm/nvm.sh && nvm use 22 && openclaw setup --baseline --workspace .
+Command outputs captured
+Running command: mkdir -p ~/.openclaw && cp /logs/agent/openclaw.upload.json ~/.openclaw/openclaw.json
+Command outputs captured
+OpenClaw agent env keys: ['OPENAI_API_KEY', 'OPENAI_BASE_URL']
+OpenClaw agent command: . ~/.nvm/nvm.sh && nvm use 22 && openclaw agent --local --json --agent main --thinking high --model openai/openai/gpt-4.1-mini --message 'Create a file called hello.txt with "Hello, world!" as the content.
+' 2>&1 </dev/null | stdbuf -oL tee /logs/agent/openclaw.txt
+Running command: . ~/.nvm/nvm.sh && nvm use 22 && openclaw agent --local --json --agent main --thinking high --model openai/openai/gpt-4.1-mini --message 'Create a file called hello.txt with "Hello, world!" as the content.
+' 2>&1 </dev/null | stdbuf -oL tee /logs/agent/openclaw.txt
+Command outputs captured
+Running command: python3 -c 'def _openclaw_container_copy_session_transcript() -> None:
+    """
+    Stdlib-only logic run inside the agent container ("python3 -c").
+    Serialized via "inspect.getsource" as a **single** self-contained function.
+    Parse "openclaw.txt" by finding the last JSON object that consumes the file suffix,
+    then copy "agentMeta.sessionFile".
+    """
+    import json
+    import shutil
+    import sys
+    from pathlib import Path
+
+    log_path = Path("/logs/agent/openclaw.txt")
+    if not log_path.is_file():
+        sys.exit(0)
+    raw = log_path.read_text(encoding="utf-8", errors="replace")
+    text = raw.strip()
+    if not text:
+        sys.exit(0)
+    dec = json.JSONDecoder()
+    envelope = None
+    for start in range(len(text) - 1, -1, -1):
+        if text[start] != "{":
+            continue
+        try:
+            obj, consumed = dec.raw_decode(text[start:])
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if not isinstance(obj, dict):
+            continue
+        if text[start + consumed :].strip():
+            continue
+        envelope = obj
+        break
+    if not envelope:
+        sys.exit(0)
+    meta = envelope.get("meta")
+    if not isinstance(meta, dict):
+        sys.exit(0)
+    agent_meta = meta.get("agentMeta")
+    if not isinstance(agent_meta, dict):
+        sys.exit(0)
+    session_file = agent_meta.get("sessionFile")
+    if not isinstance(session_file, str) or not session_file.strip():
+        sys.exit(0)
+    src = Path(session_file)
+    if not src.is_file():
+        sys.exit(0)
+    dst = Path("/logs/agent") / "openclaw.session.jsonl"
+    shutil.copy2(src, dst)
+
+_openclaw_container_copy_session_transcript()
+'
+Command failed
+Could not copy OpenClaw session file to /logs/agent/openclaw.session.jsonl (non-fatal)
+Traceback (most recent call last):
+  File "/Users/zachairbook/.local/share/uv/tools/harbor/lib/python3.12/site-packages/harbor/agents/installed/openclaw.py", line 457, in _copy_openclaw_session_file_to_agent_logs
+    await self.exec_as_agent(
+  File "/Users/zachairbook/.local/share/uv/tools/harbor/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 898, in exec_as_agent
+    return await self._exec(
+           ^^^^^^^^^^^^^^^^^
+  File "/Users/zachairbook/.local/share/uv/tools/harbor/lib/python3.12/site-packages/harbor/agents/installed/base.py", line 865, in _exec
+    raise self._classify_exec_error(command, result)
+harbor.agents.installed.base.NonZeroAgentExitCodeError: Command failed (exit 127): python3 -c 'def _openclaw_container_copy_session_transcript() -> None:
+    """
+    Stdlib-only logic run inside the agent container ("python3 -c").
+    Serialized via "inspect.getsource" as a **single** self-contained function.
+    Parse "openclaw.txt" by finding the last JSON object that consumes the file suffix,
+    then copy "agentMeta.sessionFile".
+    """
+    import json
+    import shutil
+    import sys
+    from pathlib import Path
+
+    log_path = Path("/logs/agent/openclaw.txt")
+    if not log_path.is_file():
+        sys.exit(0)
+    raw = log_path.read_text(encoding="utf-8", errors="replace")
+    text = raw.strip()
+    if not text:
+        sys.exit(0)
+    dec = json.JSONDecoder()
+    envelope = None
+    for start in range(len(text) - 1, -1, -1):
+        if text[start] != "{":
+            continue
+        try:
+            obj, consumed = dec.raw_decode(text[start:])
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if not isinstance(obj, dict):
+            continue
+        if text[start + consumed :].strip():
+            continue
+        envelope = obj
+        break
+    if not envelope:
+        sys.exit(0)
+    meta = envelope.get("meta")
+    if not isinstance(meta, dict):
+        sys.exit(0)
+    agent_meta = meta.get("agentMeta")
+    if not isinstance(agent_meta, dict):
+        sys.exit(0)
+    session_file = agent_meta.get("sessionFile")
+    if not isinstance(session_file, str) or not session_file.strip():
+        sys.exit(0)
+    src = Path(session_file)
+    if not src.is_file():
+        sys.exit(0)
+    dst = Path("/logs/agent") / "openclaw.session.jsonl"
+    shutil.copy2(src, dst)
+
+_openclaw_container_copy_session_transcript()
+'
+stdout: bash: line 1: python3: command not found
+
+stderr: None
+Collecting main service artifacts

@@ -98,7 +98,15 @@ def infer_vendor(model: str) -> str | None:
     return None
 
 
-def model_args(model: str, base: str, key: str, raw_override: str = "") -> tuple[str, dict[str, str]]:
+# Harbor agents with no native OpenRouter provider (they raise "Unsupported
+# provider 'openrouter'"). For these, OpenRouter is reached as the OpenAI-
+# compatible `openai` provider with an explicit base URL instead.
+NO_OPENROUTER_PROVIDER = frozenset({"openclaw"})
+
+
+def model_args(
+    model: str, base: str, key: str, raw_override: str = "", agent: str = ""
+) -> tuple[str, dict[str, str]]:
     """(harbor model id, env vars to set) for the Belvedir MODEL_* contract."""
     if raw_override:
         # Power users: pass Harbor/LiteLLM ids straight through; the key still
@@ -121,12 +129,23 @@ def model_args(model: str, base: str, key: str, raw_override: str = "") -> tuple
                     f"OpenRouter ids are vendor/model; can't infer the vendor for {bare!r}"
                 )
             bare = f"{vendor}/{bare}"
+        if agent in NO_OPENROUTER_PROVIDER:
+            # OpenRouter is OpenAI-compatible: the agent's `openai` provider
+            # pointed at OpenRouter's base, model id kept as vendor/model.
+            or_base = base or OPENROUTER_BASE
+            return f"openai/{bare}", {
+                "OPENAI_API_KEY": key,
+                "OPENAI_BASE_URL": or_base,
+                "OPENAI_API_BASE": or_base,
+            }
         return f"openrouter/{bare}", {"OPENROUTER_API_KEY": key}
     if base:
         # Any OpenAI-compatible endpoint (Together, vLLM, a Belvedir router
-        # key, …): LiteLLM's openai/ provider with an explicit base.
+        # key, …): LiteLLM's openai/ provider with an explicit base. Both
+        # base-URL spellings, since agents differ (LiteLLM: OPENAI_API_BASE;
+        # OpenClaw & co: OPENAI_BASE_URL).
         stripped = bare.split("/", 1)[1] if bare.startswith("openai/") else bare
-        return f"openai/{stripped}", {"OPENAI_API_KEY": key, "OPENAI_API_BASE": base}
+        return f"openai/{stripped}", {"OPENAI_API_KEY": key, "OPENAI_API_BASE": base, "OPENAI_BASE_URL": base}
     vendor = infer_vendor(bare)
     if vendor == "anthropic":
         return f"anthropic/{bare.split('/', 1)[-1]}", {"ANTHROPIC_API_KEY": key}
@@ -343,7 +362,7 @@ def main() -> None:
     else:
         try:
             model_id, model_env = model_args(
-                env("MODEL"), env("MODEL_API_BASE"), env("MODEL_API_KEY"), env("HARBOR_MODEL")
+                env("MODEL"), env("MODEL_API_BASE"), env("MODEL_API_KEY"), env("HARBOR_MODEL"), agent
             )
         except ValueError as e:
             fail(str(e))

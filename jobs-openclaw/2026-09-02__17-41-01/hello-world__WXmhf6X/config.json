@@ -1,0 +1,14 @@
+{
+    "task": {
+        "name": "hello-world/hello-world",
+        "ref": "sha256:38d7a077f07fbee8efc78db5dec9a72f82e727510ad1dcfeac0b55fa845256b7",
+        "source": "harbor/hello-world"
+    },
+    "trial_name": "hello-world__WXmhf6X",
+    "trials_dir": "jobs-openclaw/2026-09-02__17-41-01",
+    "agent": {
+        "name": "openclaw",
+        "model_name": "openai/openai/gpt-4.1-mini"
+    },
+    "job_id": "0fac9046-e569-4901-bacd-960ddcacb2ee"
+}

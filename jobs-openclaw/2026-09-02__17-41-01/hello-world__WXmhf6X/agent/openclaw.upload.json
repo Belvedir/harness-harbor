@@ -1,0 +1,28 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "."
+    }
+  },
+  "gateway": {
+    "mode": "local"
+  },
+  "models": {
+    "providers": {
+      "openai": {
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "models": [
+          {
+            "id": "openai/openai/gpt-4.1-mini",
+            "name": "openai/openai/gpt-4.1-mini"
+          }
+        ]
+      }
+    }
+  },
+  "tools": {
+    "deny": [
+      "message"
+    ]
+  }
+}
