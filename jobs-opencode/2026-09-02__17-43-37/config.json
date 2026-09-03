@@ -1,0 +1,18 @@
+{
+    "job_name": "2026-09-02__17-43-37",
+    "jobs_dir": "jobs-opencode",
+    "quiet": true,
+    "agents": [
+        {
+            "name": "opencode",
+            "model_name": "openrouter/openai/gpt-4.1-mini"
+        }
+    ],
+    "datasets": [
+        {
+            "name": "harbor/hello-world",
+            "ref": "sha256:d10e96e201d6816b22553504e06e7de0153a26381e808d11404cbca530b9d388",
+            "n_tasks": 1
+        }
+    ]
+}

@@ -66,12 +66,14 @@ with tempfile.TemporaryDirectory() as d:
     trial("c__3", rewards={"reward": 0.5})
     trial("d__4", exc={"exception_type": "RuntimeError", "exception_message": "boom"})
     trial("e__5", rewards={"accuracy": 1.0, "speed": 0.0})
+    trial("f__6", exc={"exception_type": "AgentTimeoutError", "exception_message": "agent exceeded 1800s"})
     agg = run.aggregate(job)
-    check("counts", agg["total"] == 5 and agg["passed"] == 3 and agg["errored"] == 1, str(agg))
-    check("score averages with errored as 0", abs(agg["score"] - (1 + 0 + 0.5 + 0 + 0.5) / 5) < 1e-9, str(agg["score"]))
+    check("counts", agg["total"] == 6 and agg["passed"] == 3 and agg["errored"] == 1 and agg["timed_out"] == 1, str({k: agg[k] for k in ("total","passed","errored","timed_out")}))
+    check("score averages with errored and timed-out as 0", abs(agg["score"] - (1 + 0 + 0.5 + 0 + 0.5 + 0) / 6) < 1e-9, str(agg["score"]))
+    check("timeout is not an error", agg["tasks"][5]["error"] is None and agg["tasks"][5]["timed_out"] is True)
     check("error recorded", agg["tasks"][3]["error"] == "RuntimeError: boom")
     check("multi-metric mean", agg["tasks"][4]["score"] == 0.5)
-    check("error rate", abs(agg["error_rate"] - 0.2) < 1e-9)
+    check("error rate excludes timeouts", abs(agg["error_rate"] - 1 / 6) < 1e-9)
 
 # bundle materialization + agent mapping
 check("belvedir agent maps to import path", run.agent_arg("belvedir") == run.BELVEDIR_AGENT_IMPORT and run.agent_arg("terminus-2") == "terminus-2")

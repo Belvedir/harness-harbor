@@ -25,8 +25,9 @@ Platform contract (Belvedir benchmarks docs):
        HARBOR_ENV            Harbor environment backend (default modal — the
                              Belvedir sandbox has no Docker daemon; `docker`
                              for local runs)
-       HARBOR_N_TASKS        cap on tasks (default 10; blank/0 = the whole
-                             suite — mind the 1h sandbox cap)
+       HARBOR_N_TASKS        cap on tasks (default 5; blank/0 = the whole
+                             suite — the 1h sandbox cap fits ~5 Terminal-Bench
+                             tasks at concurrency 4)
        HARBOR_TASK_NAMES     comma-separated task names/globs to include
        HARBOR_CONCURRENCY    concurrent trials (default 4)
        HARBOR_MODEL          raw Harbor/LiteLLM model id override (skips the
@@ -63,7 +64,14 @@ DEFAULT_AGENT = "terminus-2"
 BELVEDIR_AGENT_IMPORT = "belvedir_harbor.agent:BelvedirAgent"
 DATASET_DIR = Path("dataset")
 DEFAULT_ENV = "modal"
-DEFAULT_N_TASKS = 10
+# Default task cap. Terminal-Bench 2.1 with terminus-2 took ~8 min/task at
+# concurrency 4 on Modal (Sept 3 live run: 5 tasks = 41 min), and the Belvedir
+# sandbox caps a run at 1h — ten would not fit.
+DEFAULT_N_TASKS = 5
+# Harbor exceptions that are the AGENT failing the task, not the
+# infrastructure failing the run: they score 0 and count as attempted, so
+# they never trip the scoreless threshold below.
+TASK_FAILURE_EXCEPTIONS = frozenset({"AgentTimeoutError"})
 DEFAULT_CONCURRENCY = 4
 JOBS_DIR = Path("jobs")
 RESULTS_PATH = Path("results.json")
@@ -249,6 +257,12 @@ def aggregate(job_dir: Path) -> dict:
             continue
         rewards = ((r.get("verifier_result") or {}).get("rewards") or {})
         exc = r.get("exception_info")
+        # An agent timeout is a failed attempt (the model ran out of its task
+        # budget), not an infrastructure error — Terminal-Bench gives agents
+        # long budgets, and slow models exhaust them legitimately.
+        timed_out = isinstance(exc, dict) and exc.get("exception_type") in TASK_FAILURE_EXCEPTIONS
+        if timed_out:
+            exc = None
         reward = rewards.get("reward")
         if not isinstance(reward, (int, float)):
             # Multi-metric verifiers: take the mean of numeric metrics.
@@ -262,6 +276,7 @@ def aggregate(job_dir: Path) -> dict:
                 "trial": r.get("trial_name") or trial_result.parent.name,
                 "score": float(reward) if reward is not None and not exc else 0.0,
                 "pass": bool(reward is not None and not exc and reward >= 0.5),
+                "timed_out": timed_out,
                 "error": (
                     f"{exc.get('exception_type', 'error')}: {str(exc.get('exception_message', ''))[:200]}"
                     if isinstance(exc, dict)
@@ -283,6 +298,7 @@ def aggregate(job_dir: Path) -> dict:
         "error_rate": (errored / total) if total else 0.0,
         # Summed per-task container wall time — what the platform meters
         # when the containers ran on its managed Modal workspace.
+        "timed_out": sum(1 for t in trials if t.get("timed_out")),
         "container_sec": round(sum(t["elapsed_sec"] or 0.0 for t in trials), 1),
         "tasks": trials,
     }
@@ -429,7 +445,7 @@ def main() -> None:
     RESULTS_PATH.write_text(text)
     log(
         f"done: score {out['score']:.3f} ({out['passed']}/{out['total']} passed, "
-        f"{out['errored']} errored) in {elapsed:.0f}s"
+        f"{out['timed_out']} timed out, {out['errored']} errored) in {elapsed:.0f}s"
     )
 
 

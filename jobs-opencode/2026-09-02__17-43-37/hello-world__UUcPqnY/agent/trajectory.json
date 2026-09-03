@@ -1,0 +1,68 @@
+{
+  "schema_version": "ATIF-v1.7",
+  "session_id": "ses_f9b45ecedffekHxngnYQTd7qDE",
+  "agent": {
+    "name": "opencode",
+    "version": "1.18.27",
+    "model_name": "openrouter/openai/gpt-4.1-mini"
+  },
+  "steps": [
+    {
+      "step_id": 1,
+      "source": "user",
+      "message": "Create a file called hello.txt with \"Hello, world!\" as the content.\n"
+    },
+    {
+      "step_id": 2,
+      "timestamp": "2026-09-03T00:45:17.417000+00:00",
+      "source": "agent",
+      "model_name": "openrouter/openai/gpt-4.1-mini",
+      "message": "I will create a file named hello.txt and write \"Hello, world!\" as its content.",
+      "tool_calls": [
+        {
+          "tool_call_id": "call_wgPudJI7NSd9ipiPcEPN680r",
+          "function_name": "write",
+          "arguments": {
+            "content": "Hello, world!",
+            "filePath": "/hello.txt"
+          }
+        }
+      ],
+      "observation": {
+        "results": [
+          {
+            "source_call_id": "call_wgPudJI7NSd9ipiPcEPN680r",
+            "content": "Wrote file successfully."
+          }
+        ]
+      },
+      "metrics": {
+        "prompt_tokens": 6641,
+        "completion_tokens": 45,
+        "cost_usd": 0.0027284
+      },
+      "llm_call_count": 1
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-09-03T00:45:23.892000+00:00",
+      "source": "agent",
+      "model_name": "openrouter/openai/gpt-4.1-mini",
+      "message": "I have created the file hello.txt with the content \"Hello, world!\". If you need anything else, just let me know!",
+      "metrics": {
+        "prompt_tokens": 6695,
+        "completion_tokens": 28,
+        "cached_tokens": 6528,
+        "cost_usd": 0.0007644
+      },
+      "llm_call_count": 1
+    }
+  ],
+  "final_metrics": {
+    "total_prompt_tokens": 13336,
+    "total_completion_tokens": 73,
+    "total_cached_tokens": 6528,
+    "total_cost_usd": 0.0034928000000000003,
+    "total_steps": 3
+  }
+}

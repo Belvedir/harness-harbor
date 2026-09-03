@@ -1,0 +1,14 @@
+{
+    "task": {
+        "name": "hello-world/hello-world",
+        "ref": "sha256:38d7a077f07fbee8efc78db5dec9a72f82e727510ad1dcfeac0b55fa845256b7",
+        "source": "harbor/hello-world"
+    },
+    "trial_name": "hello-world__UUcPqnY",
+    "trials_dir": "jobs-opencode/2026-09-02__17-43-37",
+    "agent": {
+        "name": "opencode",
+        "model_name": "openrouter/openai/gpt-4.1-mini"
+    },
+    "job_id": "800bbd66-2121-434d-b411-031d54cf9054"
+}

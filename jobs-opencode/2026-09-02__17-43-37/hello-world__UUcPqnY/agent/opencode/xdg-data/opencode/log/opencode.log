@@ -1,0 +1,36 @@
+timestamp=2026-09-03T00:45:10.774Z level=INFO run=acb15b07 message="creating instance" directory=/app
+timestamp=2026-09-03T00:45:10.775Z level=INFO run=acb15b07 message=fromDirectory directory=/app
+timestamp=2026-09-03T00:45:10.779Z level=INFO run=acb15b07 message=bootstrapping directory=/app
+timestamp=2026-09-03T00:45:10.784Z level=INFO run=acb15b07 message=loading path=/root/.config/opencode/config.json
+timestamp=2026-09-03T00:45:10.784Z level=INFO run=acb15b07 message=loading path=/root/.config/opencode/opencode.json
+timestamp=2026-09-03T00:45:10.787Z level=INFO run=acb15b07 message=loading path=/root/.config/opencode/opencode.jsonc
+timestamp=2026-09-03T00:45:11.015Z level=INFO run=acb15b07 message="all LSPs are disabled"
+timestamp=2026-09-03T00:45:11.016Z level=INFO run=acb15b07 message="all formatters are disabled"
+timestamp=2026-09-03T00:45:11.016Z level=INFO run=acb15b07 message=init
+timestamp=2026-09-03T00:45:11.314Z level=INFO run=acb15b07 message=created id=ses_f9b45ecedffekHxngnYQTd7qDE slug=neon-panda version=1.18.27 projectID=global directory=/app path=app workspaceID=undefined parentID=undefined title="New session - 2026-09-03T00:45:11.314Z" agent=undefined model=undefined metadata=undefined permission="[{\"permission\":\"question\",\"pattern\":\"*\",\"action\":\"deny\"},{\"permission\":\"plan_enter\",\"pattern\":\"*\",\"action\":\"deny\"},{\"permission\":\"plan_exit\",\"pattern\":\"*\",\"action\":\"deny\"}]" cost=0 tokens.input=0 tokens.output=0 tokens.reasoning=0 tokens.cache.read=0 tokens.cache.write=0 time.created=1788396311314 time.updated=1788396311314
+timestamp=2026-09-03T00:45:11.373Z level=INFO run=acb15b07 message="event connected"
+timestamp=2026-09-03T00:45:11.978Z level=INFO run=acb15b07 message=loop session.id=ses_f9b45ecedffekHxngnYQTd7qDE step=0
+timestamp=2026-09-03T00:45:11.999Z level=INFO run=acb15b07 message=stream providerID=openrouter modelID=google/gemini-3.8-flash session.id=ses_f9b45ecedffekHxngnYQTd7qDE small=true agent=title mode=primary
+timestamp=2026-09-03T00:45:12.008Z level=INFO run=acb15b07 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=openrouter llm.model=google/gemini-3.8-flash
+timestamp=2026-09-03T00:45:12.269Z level=INFO run=acb15b07 message=initialized
+timestamp=2026-09-03T00:45:12.296Z level=INFO run=acb15b07 message=tracking hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/app git=/logs/agent/opencode/xdg-data/opencode/snapshot/global/42099b4af021e53fd8fd4e056c2568d7c2e3ffa8
+timestamp=2026-09-03T00:45:12.300Z level=INFO run=acb15b07 message="shell tool using shell" shell=/usr/bin/bash
+timestamp=2026-09-03T00:45:12.304Z level=INFO run=acb15b07 message=init count=1
+timestamp=2026-09-03T00:45:12.401Z level=INFO run=acb15b07 message="watcher backend" directory=/app platform=linux backend=inotify
+timestamp=2026-09-03T00:45:12.407Z level=INFO run=acb15b07 message="project copy refresh started" projectID=global
+timestamp=2026-09-03T00:45:12.408Z level=INFO run=acb15b07 message="project copy refresh done" projectID=global updated=[] removed=[]
+timestamp=2026-09-03T00:45:12.418Z level=INFO run=acb15b07 message="booting location services" directory=/app workspaceID=undefined
+timestamp=2026-09-03T00:45:12.591Z level=INFO run=acb15b07 message=process session.id=ses_f9b45ecedffekHxngnYQTd7qDE messageID=msg_064ba15ac001GJJNJGB3JpZboK
+timestamp=2026-09-03T00:45:12.602Z level=INFO run=acb15b07 message=stream providerID=openrouter modelID=openai/gpt-4.1-mini session.id=ses_f9b45ecedffekHxngnYQTd7qDE small=false agent=build mode=primary
+timestamp=2026-09-03T00:45:12.603Z level=INFO run=acb15b07 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=openrouter llm.model=openai/gpt-4.1-mini
+timestamp=2026-09-03T00:45:20.425Z level=INFO run=acb15b07 message=evaluated permission=external_directory pattern=/* action.permission=external_directory action.pattern=* action.action=ask
+timestamp=2026-09-03T00:45:20.425Z level=INFO run=acb15b07 message=asking id=per_064ba36a9001r7k6mtEAMZd2Oj permission=external_directory patterns="[\"/*\"]"
+timestamp=2026-09-03T00:45:20.441Z level=INFO run=acb15b07 message=evaluated permission=edit pattern=hello.txt action.permission=* action.action=allow action.pattern=*
+timestamp=2026-09-03T00:45:20.442Z level=INFO run=acb15b07 message=formatting file=/hello.txt
+timestamp=2026-09-03T00:45:20.443Z level=INFO run=acb15b07 message="touching file" file=/hello.txt
+timestamp=2026-09-03T00:45:20.540Z level=INFO run=acb15b07 message=tracking hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/app git=/logs/agent/opencode/xdg-data/opencode/snapshot/global/42099b4af021e53fd8fd4e056c2568d7c2e3ffa8
+timestamp=2026-09-03T00:45:20.643Z level=INFO run=acb15b07 message=loop session.id=ses_f9b45ecedffekHxngnYQTd7qDE step=1
+timestamp=2026-09-03T00:45:20.689Z level=INFO run=acb15b07 message=tracking hash=4b825dc642cb6eb9a060e54bf8d69288fbee4904 cwd=/app git=/logs/agent/opencode/xdg-data/opencode/snapshot/global/42099b4af021e53fd8fd4e056c2568d7c2e3ffa8
+timestamp=2026-09-03T00:45:20.694Z level=INFO run=acb15b07 message=process session.id=ses_f9b45ecedffekHxngnYQTd7qDE messageID=msg_064ba3785001jpcXO2IQUzsYdP
+timestamp=2026-09-03T00:45:20.695Z level=INFO run=acb15b07 message=stream providerID=openrouter modelID=openai/gpt-4.1-mini session.id=ses_f9b45ecedffekHxngnYQTd7qDE small=false agent=build mode=primary
+timestamp=2026-09-03T00:45:20.709Z level=INFO run=acb15b07 message="llm runtime selected" llm.runtime=ai-sdk llm.provider=openrouter llm.model=openai/gpt-4.1-mini

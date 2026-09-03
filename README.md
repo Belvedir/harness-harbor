@@ -17,7 +17,7 @@ Benchmarks page. It also runs anywhere with Docker (`HARBOR_ENV=docker`).
 | `HARBOR_DATASET` | hub dataset `org/name[@version]` — the catalog preset fills it. Alternatively the platform sets `BELVEDIR_HARBOR_BUNDLE_URL`, an exported Belvedir environment the driver materializes and runs with `harbor run -p` |
 | `HARBOR_AGENT` | Harbor agent scaffold, default `terminus-2` (`claude-code`, `codex`, `openhands`, … also work); `belvedir` = the Belvedir external agent (one model call per task via the `MODEL_*` contract, traced into the project) |
 | `HARBOR_ENV` | Harbor backend, default `modal`; `docker` for local runs |
-| `HARBOR_N_TASKS` | task cap, default 10 (blank/0 = whole suite; the Belvedir sandbox caps a run at 1h) |
+| `HARBOR_N_TASKS` | task cap, default 5 (blank/0 = whole suite). The Belvedir sandbox caps a run at 1h; Terminal-Bench 2.1 with terminus-2 ran ~8 min/task at concurrency 4 on Modal |
 | `HARBOR_TASK_NAMES` | comma-separated task names or globs to include |
 | `HARBOR_CONCURRENCY` | concurrent trials, default 4 |
 | `HARBOR_MODEL` | raw Harbor/LiteLLM model id, bypassing the `MODEL_*` mapping |
@@ -25,7 +25,7 @@ Benchmarks page. It also runs anywhere with Docker (`HARBOR_ENV=docker`).
 | `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` | with `HARBOR_ENV=modal`: the Modal account hosting the per-task containers. Bring your own — Belvedir never puts platform credentials in a sandbox |
 
 Output: `results.json` with `score` (mean reward over trials, errored trials
-count as 0), `total`, `passed`, `errored`, `container_sec` (summed per-task
+count as 0; an `AgentTimeoutError` is a failed attempt, scored 0 and counted in `timed_out`, not an error), `total`, `passed`, `errored`, `container_sec` (summed per-task
 container wall time — what the platform meters for managed Modal), per-task
 rewards and errors, the dataset/agent/model, and Harbor's version. When more than 30% of trials error
 the driver exits scoreless rather than report a number that measures the
